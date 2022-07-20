@@ -52,11 +52,11 @@ function sendArtworkQueryRespond (target) {
 		// Generate query string by concatenation
 		const query = (target === 'comment')
 
-			// reply
+			// comment
 			? 'SELECT id' +
 				' FROM ' + target +
 				' WHERE artwork_id = ?' +
-				' ORDER BY create_date LIMIT ?, ?'
+				' ORDER BY create_date DESC LIMIT ?, ?'
 
 			// for other target
 			: ''
@@ -81,7 +81,7 @@ function sendArtworkQueryRespond (target) {
 }
 
 // Set router for artwork's metadata
-router.get('/', sendArtworkMetadataRespond());
+router.get('/', sendArtworkMetadataRespond())
 
 // Set router for comment query
 router.get('/comment', sendArtworkQueryRespond('comment'))

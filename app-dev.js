@@ -18,6 +18,7 @@ var indexRouter = require(base_route + '/index');
 
 // Routes for DB connection
 var userRouter = require(base_route + '/user');
+var authRouter = require(base_route + '/auth');
 var artworkRouter = require(base_route + '/artwork');
 var commentRouter = require(base_route + '/comment');
 var eventRouter = require(base_route + '/event');
@@ -41,6 +42,7 @@ app.use('/', indexRouter);
 
 // Deploy routes for DB connection
 app.use('/server-api/user', userRouter);
+app.use('/server-api/auth', authRouter);
 app.use('/server-api/artwork', artworkRouter);
 app.use('/server-api/comment', commentRouter);
 app.use('/server-api/event', eventRouter);
