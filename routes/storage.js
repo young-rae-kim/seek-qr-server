@@ -34,8 +34,8 @@ function sendSignedUrlRespond (type, target, sub_target) {
 					if (sub_target === 'represent') {
 						directory += '0.jpg'
 					}
-					else if (sub_target === 'original') {
-						directory += 'original/'
+					else if (sub_target === 'thumbnail') {
+						directory += 'thumbnail/thumbnail.jpg'
 					}
 					break
 
@@ -61,7 +61,7 @@ function sendSignedUrlRespond (type, target, sub_target) {
 
 // Set router for request on image's signed url (user, artist, artwork, advertisement)
 router.get('/image/artwork/all', sendSignedUrlRespond('image', 'artwork', 'all'))
-router.get('/image/artwork/original', sendSignedUrlRespond('image', 'artwork', 'original'))
+router.get('/image/artwork/thumbnail', sendSignedUrlRespond('image', 'artwork', 'thumbnail'))
 router.get('/image/artwork/represent', sendSignedUrlRespond('image', 'artwork', 'represent'))
 // router.get('/image/user/profile', sendSignedUrlRespond('image', 'user', 'profile'))
 // router.get('/image/artist/profile', sendSignedUrlRespond('image', 'artist', 'profile'))

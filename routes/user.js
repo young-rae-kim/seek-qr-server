@@ -24,7 +24,7 @@ function sendUserQueryRespond (target) {
 		const query = (is_user)
 
 			// user
-			? 'SELECT nickname' +
+			? 'SELECT nickname, page_id' +
 				' FROM ' + target +
 				' WHERE id = ?' +
 				" AND account_expired = b'0'" +
@@ -32,17 +32,18 @@ function sendUserQueryRespond (target) {
 				" AND withdrawn = b'0'"
 
 			// history, archive
-			: 'SELECT artwork_id' + 
-				' FROM ' + target +
-				' WHERE user_id = ?' +
-				' AND artwork_id NOT IN (' +
+			: 'SELECT artwork.page_id' + 
+				' FROM ' + target + ' as target' +
+				' JOIN artwork' +
+				' ON artwork.id = target.artwork_id' +
+				' WHERE target.user_id = ?' +
+				' AND target.artwork_id NOT IN (' +
 					"SELECT id FROM artwork WHERE deleted = 1)" +
-				' ORDER BY access_date DESC LIMIT ?, ?'
+				' ORDER BY target.access_date DESC LIMIT ?, ?'
 
 		// Execute query and send the result
 		try {
 			const result = await pool.queryParamArr(query, values)
-			console.log(result, query)
 			if (result[0].length === 0) {
 				res.status(404).send(result)
 			} 

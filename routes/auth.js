@@ -5,7 +5,7 @@ var pool = require('../modules/pool')
 
 // Send respond for authentication
 // return function that send query result with status
-function sendAuthRespond () {
+function sendAuthRespond (is_artist) {
 	return async function (req, res, next) {
 
 		// provider and its ID
@@ -14,10 +14,19 @@ function sendAuthRespond () {
 		const values = [provider, provider_id]
 
 		// Generate query string by concatenation
-		const query = 
+		const query = (is_artist) 
+
+			// Search verified user_id for given authentication information
+			? 'SELECT oauth.user_id' +
+				' FROM oauth' +
+				' JOIN user' +
+				' ON user.id = oauth.user_id' +
+				' WHERE oauth.provider = ?' +
+				' AND oauth.provider_id = ?' +
+				" AND user.verified = b'1'"
 
 			// Search user_id for given authentication information
-			'SELECT user_id' + 
+			: 'SELECT user_id' + 
 				' FROM oauth' +
 				' WHERE provider = ?' +
 				' AND provider_id = ?'
@@ -43,7 +52,7 @@ function sendAuthRespond () {
 
 // Send respond for checking given account
 // return function that send query result with status
-function sendCheckRespond () {
+function sendCheckRespond (is_artist) {
 	return async function (req, res, next) {
 
 		// provider, id
@@ -52,10 +61,19 @@ function sendCheckRespond () {
 		const values = [provider, provider_id]
 
 		// Generate query string by concatenation
-		const query = 
+		const query = (is_artist) 
+
+			// Search verified user_id for given authentication information
+			? 'SELECT oauth.user_id' +
+				' FROM oauth' +
+				' JOIN user' +
+				' ON user.id = oauth.user_id' +
+				' WHERE oauth.provider = ?' +
+				' AND oauth.provider_id = ?' +
+				" AND user.verified = b'1'"
 
 			// Search user_id for given authentication information
-			'SELECT user_id' + 
+			: 'SELECT user_id' + 
 				' FROM oauth' +
 				' WHERE provider = ?' +
 				' AND provider_id = ?'
@@ -180,10 +198,14 @@ function sendRegisterRespond () {
 }
 
 
-// Set router for metadata query (user, artist, person, artwork)
-router.post('/', sendAuthRespond())
-router.post('/check', sendCheckRespond())
+// Set router for user authentication
+router.post('/', sendAuthRespond(false))
+router.post('/check', sendCheckRespond(false))
 router.post('/refresh', sendRefreshRespond())
 router.post('/register', sendRegisterRespond())
+
+// Set router for user authentication
+router.post('/artist', sendAuthRespond(true))
+router.post('/artist/check', sendCheckRespond(true))
 
 module.exports = router

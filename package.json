@@ -7,6 +7,7 @@
     "dev": "node ./bin/www-dev"
   },
   "dependencies": {
+    "aws-cloudfront-sign": "^2.2.0",
     "aws-sdk": "latest",
     "body-parser": "latest",
     "cookie-parser": "~1.4.4",
@@ -16,7 +17,9 @@
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
+    "js-sha3": "^0.8.0",
     "mkcert": "^1.5.0",
+    "moment": "^2.29.4",
     "morgan": "~1.9.1",
     "multer-s3": "^2.10.0",
     "mysql": "latest",

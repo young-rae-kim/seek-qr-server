@@ -87,7 +87,8 @@ function sendCommentDeleteRespond () {
 		const values = [user_id, comment_id]	
 
 		// Generate query string by concatenation
-		const query = 'DELETE FROM comment' +
+		const query = 'UPDATE comment' +
+				" SET deleted = b'1'" +
 				' WHERE user_id = ? AND id = ?'
 
 		// Execute query and send the result
