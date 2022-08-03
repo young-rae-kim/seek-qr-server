@@ -24,7 +24,7 @@ function sendUserQueryRespond (target) {
 		const query = (is_user)
 
 			// user
-			? 'SELECT nickname, page_id' +
+			? 'SELECT nickname, page_id, sns' +
 				' FROM ' + target +
 				' WHERE id = ?' +
 				" AND account_expired = b'0'" +
@@ -32,7 +32,7 @@ function sendUserQueryRespond (target) {
 				" AND withdrawn = b'0'"
 
 			// history, archive
-			: 'SELECT artwork.page_id' + 
+			: 'SELECT artwork.page_id as page_id' + 
 				' FROM ' + target + ' as target' +
 				' JOIN artwork' +
 				' ON artwork.id = target.artwork_id' +

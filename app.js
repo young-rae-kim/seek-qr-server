@@ -7,7 +7,7 @@ var logger = require('morgan');
 // CORS Package
 const cors = require('cors');
 let corsOption = {
-	origin: 'https://se-ek.com',
+	origin: ['https://se-ek.com'],
 	credentials: true
 };
 
@@ -36,7 +36,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors(corsOption));
+app.use(cors());
 
 app.use('/', indexRouter);
 
