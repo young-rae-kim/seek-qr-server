@@ -1,11 +1,5 @@
-var s3 = require('../config/storage');
-
-const multer = require('multer-s3');
-const multerUploader = multer({
-	s3: s3,
- 	bucket: 'seek-customer-storage',
- 	acl: 'public-read',
-});
+var s3 = require('../config/storage')
+var cfUtil = require('aws-cloudfront-sign')
 
 const aws = require('aws-sdk')
 const fs = require('fs')
@@ -29,6 +23,7 @@ const privateKeyContents = fs.readFileSync(privateKeyFilePath, 'utf8')
  * Refer to this screenshot https://cdn-images-1.medium.com/max/716/1*UZI0mq0LJd5Hn2t5psOrwA.png
  */
 const cfDomainName = 'https://d2aorer9vopjj7.cloudfront.net'
+const rtmpDomainName = 'd2aorer9vopjj7.cloudfront.net'
 let signer = new aws.CloudFront.Signer(accessKeyID, privateKeyContents)
 
 module.exports = {
@@ -54,7 +49,7 @@ module.exports = {
 			}
 		});
 	},
-
+	
 	// Get signed url for object from s3 bucket
 	getSignedUrl: async (directory) => {
 		const cfFullPath = `${cfDomainName}/${directory}`;
@@ -68,10 +63,10 @@ module.exports = {
 		return new Promise((resolve, reject) => {
     			signer.getSignedUrl(option, (err, url) => {
         			if (err) {
-           				console.error(err);
+					console.error(err);
             				reject(err);
         			} else {
-            				resolve(url);
+					resolve(url);
         			}
     			})
 		});
@@ -95,10 +90,10 @@ module.exports = {
 						
 						for (var i = 0 ; i < data.Contents.length ; i++) {
 							const obj = data.Contents[i];
-							if (obj.Key == directory) continue;
+							if (obj.Key === directory) continue;
 							
 							const cfFullPath = `${cfDomainName}/${obj.Key}`;
-                					const option = {
+	               					const option = {
                         					url: cfFullPath,
                         					expires: Math.floor(
 									(new Date()).getTime()
@@ -125,7 +120,75 @@ module.exports = {
 				reject(e);
 			}
 		});
+	},
+	
+	// Get rtmp url for object from s3 bucket
+	getRtmpUrl: async (directory) => {
+		const option = {
+			keypairId: accessKeyID,
+			privateKeyString: privateKeyContents,
+    			expireTime: Math.floor(
+				(new Date()).getTime()
+			) + (60 * 60 * 1), // 1 hour from now
+		};
+
+		return new Promise((resolve, reject) => {
+    			const signedRTMPUrlObj = cfUtil.getSignedRTMPUrl(
+				rtmpDomainName, 
+				directory, 
+				option
+			)
+			resolve(signedRTMPUrlObj) 
+		});
+	},
+
+	// Get list of rtmp url for objects in given directory
+	getRtmpUrlList: async (directory) => {
+		return new Promise (async (resolve, reject) => {
+			try {
+				const params = {
+					Bucket: 'seek-customer-storage',
+					Prefix: directory,
+					Delimiter: '/'
+				};
+
+				s3.listObjects(params, async (err, data) => {
+					if (err) {
+						reject(err);
+					} else {
+						const urlList = [];
+						const option = {
+							keypairId: accessKeyID,
+							privateKeyString: privateKeyContents,
+                        				expireTime: Math.floor(
+								(new Date()).getTime()
+							) + (60 * 60 * 1), // 1 hour from now
+                				};
+
+						for (var i = 0 ; i < data.Contents.length ; i++) {
+							const obj = data.Contents[i];
+							if (obj.Key === directory) continue;
+
+							const url = cfUtil.getSignedRTMPUrl(
+								rtmpDomainName, 
+								obj.Key,
+								option
+							)
+
+							urlList.push(url)
+							if (i === data.Contents.length - 1) {
+								resolve(urlList);
+								return false;
+							}
+						}
+					}
+				});
+			} catch (e) {
+				reject(e);
+			}
+		});
 	}
+
 
 	// Get signed url for object from s3 bucket
 //	getSignedUrl: async (directory) => {
@@ -173,9 +236,9 @@ module.exports = {
 //							s3.getSignedUrl('getObject', objParams, (objErr, objData) => {
 //								if (objErr) {
 //									reject(objErr);
-//								} else {
-//									urlList.push(objData);
-//									if (obj.Key == data.Contents[data.Contents.length - 1].Key) {
+//								} else {									
+//										urlList.push(objData);
+//										if (obj.Key == data.Contents[data.Contents.length - 1].Key) {
 //										resolve(urlList);
 //									}
 //								}

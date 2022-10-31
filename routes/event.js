@@ -12,8 +12,8 @@ function sendEventQueryRespond (type, target) {
 	return async function (req, res, next) {
 		
 		// artwork or comment
-		const target_id = req.query.target_id
-		const user_id = req.query.user_id
+		const target_id = req.body.target_id
+		const user_id = req.body.user_id
 		const values = [target_id, user_id]
 
 		// artwork_id, comment_id
@@ -68,7 +68,7 @@ function sendEventInsertRespond (type, target) {
 		
 		// artwork_id, comment_id
 		const target_column_name = target + '_id'
-		const count_column_name = (type === "like_comment") ? 'like_count' : type + '_count'
+		const count_column_name = type.split('_')[0] + '_count'
 
 		// Generate query string for insertion (or deletion)
 		const insert_query = (is_session)
@@ -132,7 +132,7 @@ function sendEventDeleteRespond (type, target) {
 		
 		// artwork_id, comment_id
 		const target_column_name = target + '_id'
-		const count_column_name = (type === 'like_comment') ? 'like_count' : type + '_count'		
+		const count_column_name = type.split('_')[0] + '_count'		
 		
 		// Generate query string for insertion (or deletion)
 		const delete_query =
@@ -221,19 +221,22 @@ function sendEventUpdateRespond (type, target) {
 }
 
 // Set router for event query (isLiked, isArchived, isHistory)
-router.get('/like/comment', sendEventQueryRespond('like_comment', 'comment'))
-router.get('/archive/artwork', sendEventQueryRespond('archive', 'artwork'))
-router.get('/history/artwork', sendEventQueryRespond('history', 'artwork'))
+router.post('/user/like/comment', sendEventQueryRespond('like_comment', 'comment'))
+router.post('/user/archive/artwork', sendEventQueryRespond('archive_artwork', 'artwork'))
+router.post('/user/archive/exhibition', sendEventQueryRespond('archive_exhibition', 'exhibition'))
+router.post('/user/history/exhibition', sendEventQueryRespond('history', 'exhibition'))
 
 // Set router for transaction (insert) query (doLike, doArchive, doHistory, doSession)
 router.post('/like/comment', sendEventInsertRespond('like_comment', 'comment'))
-router.post('/archive/artwork', sendEventInsertRespond('archive', 'artwork'))
-router.post('/history/artwork', sendEventInsertRespond('history', 'artwork'))
+router.post('/archive/artwork', sendEventInsertRespond('archive_artwork', 'artwork'))
+router.post('/archive/exhibition', sendEventInsertRespond('archive_exhibition', 'exhibition'))
+router.post('/history/exhibition', sendEventInsertRespond('history', 'exhibition'))
 router.post('/session', sendEventInsertRespond('session', 'user'))
 
 // Set router for transaction (delete) query (doLike, doArchive)
 router.put('/like/comment', sendEventDeleteRespond('like_comment', 'comment'))
-router.put('/archive/artwork', sendEventDeleteRespond('archive', 'artwork'))
-router.put('/history/artwork', sendEventUpdateRespond('history', 'artwork'))
+router.put('/archive/artwork', sendEventDeleteRespond('archive_artwork', 'artwork'))
+router.put('/archive/exhibition', sendEventDeleteRespond('archive_exhibition', 'exhibition'))
+router.put('/history/exhibition', sendEventUpdateRespond('history', 'exhibition'))
 
 module.exports = router

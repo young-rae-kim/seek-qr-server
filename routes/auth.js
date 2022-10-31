@@ -73,7 +73,7 @@ function sendRegisterRespond () {
 			// Insert user information
 			'INSERT INTO user' +
 				' (page_id, nickname, create_ip, create_date)' +
-				' VALUES (?, ?, ?, ?)'
+				' VALUES (?, ?, ?, ?); '
 
 		const oauth_query = 
 
@@ -113,8 +113,8 @@ function sendRegisterRespond () {
 
 				// Generate final version of query string after processing with mysql module
 				const query = mysql.format(oauth_query + page_query, values)
-				const sqlit_query = query.split(';')
-				const result = await pool.queryTransactions(this, split_query)
+				const split_query = query.split(';')
+				const result = await pool.queryTransactions.apply(this, split_query)
 
 				for (let i = 0 ; i < result.length ; i++) {
 					if (result[i].affectedRows === 0) {

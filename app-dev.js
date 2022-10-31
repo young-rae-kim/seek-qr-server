@@ -20,10 +20,12 @@ var indexRouter = require(base_route + '/index');
 var userRouter = require(base_route + '/user');
 var authRouter = require(base_route + '/auth');
 var artworkRouter = require(base_route + '/artwork');
+var artistRouter = require(base_route + '/artist');
+var exhibitionRouter = require(base_route + '/exhibition');
 var commentRouter = require(base_route + '/comment');
 var eventRouter = require(base_route + '/event');
-var publicRouter = require(base_route + '/public');
 var storageRouter = require(base_route + '/storage');
+var publicRouter = require(base_route + '/public');
 
 var app = express();
 
@@ -44,10 +46,12 @@ app.use('/', indexRouter);
 app.use('/server-api/user', userRouter);
 app.use('/server-api/auth', authRouter);
 app.use('/server-api/artwork', artworkRouter);
+app.use('/server-api/artist', artistRouter);
+app.use('/server-api/exhibition', exhibitionRouter);
 app.use('/server-api/comment', commentRouter);
 app.use('/server-api/event', eventRouter);
-app.use('/server-api/public', publicRouter);
 app.use('/server-api/storage', storageRouter);
+app.use('/server-api/public', publicRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

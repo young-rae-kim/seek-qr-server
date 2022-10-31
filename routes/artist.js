@@ -14,6 +14,9 @@ function sendArtistQueryRespond (target) {
 
 		// user's ID, offset, limit
 		const target_id = req.body.target_id
+		const type_id = (target === 'artwork')
+			? 'artist_id'
+			: 'owner_id'
 		const offset = (is_user) ? 0 : parseInt(req.body.offset)
 		const limit = (is_user) ? 0 : parseInt(req.body.limit)
 		const values = (is_user)
@@ -27,19 +30,44 @@ function sendArtistQueryRespond (target) {
 			? 'SELECT nickname, sns, page_id' +
 				' FROM ' + target +
 				' WHERE id = ?' +
+				" AND verified = b'1'" +
 				" AND account_expired = b'0'" +
 				" AND account_locked = b'0'" +
 				" AND withdrawn = b'0'"
 
-			// artwork
-			: 'SELECT page_id' + 
-				' FROM ' + target +
-				' WHERE artist_id = ?' +
-				" AND deleted = b'0'" +
-				' ORDER BY create_date DESC LIMIT ?, ?'
+			// artwork, exhibition, collaboration
+			: ((target === 'total') 
+				
+				? 'SELECT ex.page_id as page_id, ex.owner_id = ? as is_owner' +
+					' FROM exhibition_collaborator as target' +
+					' RIGHT JOIN exhibition as ex ON ex.id = target.exhibition_id' +
+					' WHERE (target.artist_id = ?' +
+					' OR ex.owner_id = ?)' +
+					" AND ex.deleted = b'0'" +
+					' ORDER BY target.access_date DESC LIMIT ?, ?'
+
+
+				: ((target === 'collaboration')
+			
+					? 'SELECT ex.page_id as page_id' +
+						' FROM exhibition_collaborator as target' +
+						' JOIN exhibition as ex ON ex.id = target.exhibition_id' +
+						' WHERE target.artist_id = ?' +
+						" AND ex.deleted = b'0'" +
+						' ORDER BY target.access_date DESC LIMIT ?, ?'
+
+					: 'SELECT page_id' + 
+						' FROM ' + target +
+						' WHERE ' + type_id + ' = ?' +
+						" AND deleted = b'0'" +
+						' ORDER BY create_date DESC LIMIT ?, ?'))
 
 		// Execute query and send the result
 		try {
+			if (target === 'total') {
+				values.unshift(target_id, target_id)
+			}
+
 			const result = await pool.queryParamArr(query, values)
 			if (result[0].length === 0) {
 				res.status(404).send(result)
@@ -73,8 +101,9 @@ function sendArtistUpdateRespond (target) {
 
 			// nickname, sns
 			'UPDATE user' +
-				' SET ' + target + ' = ?'
+				' SET ' + target + ' = ?' +
 				' WHERE id = ?' +
+				" AND verified = b'1'" +
 				" AND account_expired = b'0'" +
 				" AND account_locked = b'0'" +
 				" AND withdrawn = b'0'"
@@ -101,6 +130,9 @@ function sendArtistUpdateRespond (target) {
 // Set router for metadata query (user, artist, person, artwork)
 router.post('/', sendArtistQueryRespond('user'))
 router.post('/artwork', sendArtistQueryRespond('artwork'))
+router.post('/exhibition', sendArtistQueryRespond('exhibition'))
+router.post('/exhibition/total', sendArtistQueryRespond('total'))
+router.post('/collaboration', sendArtistQueryRespond('collaboration'))
 
 // Set router for information update (nickname, sns)
 router.put('/nickname', sendArtistUpdateRespond('nickname'))

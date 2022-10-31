@@ -7,6 +7,7 @@
     "dev": "node ./bin/www-dev"
   },
   "dependencies": {
+    "aws-cloudfront-sign": "^2.2.0",
     "aws-sdk": "latest",
     "body-parser": "latest",
     "cookie-parser": "~1.4.4",

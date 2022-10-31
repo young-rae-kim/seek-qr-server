@@ -2,11 +2,10 @@
 var express = require('express')
 var router = express.Router()
 var pool = require('../modules/pool')
-var sha3_224 = require('js-sha3').sha3_224
 
 // Send respond of artwork's metadata
 // return function that send metadata of given artwork's id
-function sendArtworkMetadataRespond () {
+function sendArtworkMetadataRespond (is_page) {
 	return async function (req, res, next) {
 
 		// artwork's ID
@@ -14,10 +13,22 @@ function sendArtworkMetadataRespond () {
 		const values = [target_id]
 
 		// Generate query string by concatenation
-		const query = 'SELECT *' +
-				' FROM artwork' + 
+		const query = (is_page)
+
+			// Initialize page
+			? 'SELECT *' +
+				' FROM artwork' +
 				' WHERE page_id = ?' +
 				" AND deleted = b'0'"
+
+			// Initialize minimal data
+			: 'SELECT artwork.id as id,' +
+				' artwork.name as name,' +
+				' user.nickname as nickname' +
+				' FROM artwork' +
+				' JOIN user ON user.id = artwork.artist_id' +
+				' WHERE artwork.page_id = ?' +
+				" AND artwork.deleted = b'0'"
 
 		// Execute query and send the result
 		try {
@@ -46,12 +57,14 @@ function sendArtworkQueryRespond (target) {
 
 		// artwork's ID
 		const target_id = req.query.target_id
-		const offset = parseInt(req.query.offset)
-		const limit = parseInt(req.query.limit)
-		const values = [target_id, offset, limit]
+		const is_comment = target === 'comment'
+		
+		const offset = (is_comment) ? parseInt(req.query.offset) : null
+		const limit = (is_comment) ? parseInt(req.query.limit) : null
+		const values = (is_comment) ? [target_id, offset, limit] : [target_id]
 
 		// Generate query string by concatenation
-		const query = (target === 'comment')
+		const query = (is_comment)
 
 			// comment
 			? 'SELECT target.id AS id' +
@@ -59,15 +72,28 @@ function sendArtworkQueryRespond (target) {
 				' JOIN artwork' +
 				' ON artwork.id = target.artwork_id' +
 				' WHERE artwork.page_id = ?' +
+				" AND artwork.deleted = b'0'" +
 				" AND target.deleted = b'0'" +
 				' ORDER BY target.create_date DESC LIMIT ?, ?'
+			
+			: ((target === 'exhibition')
 
-			// for other target
-			: ''
+				? 'SELECT exhibition.page_id AS page_id' +
+					' FROM artwork_list AS target' +
+					' INNER JOIN artwork ON target.artwork_id = artwork.id' +
+					' INNER JOIN exhibition ON target.exhibition_id = exhibition.id' +
+					' WHERE artwork.page_id = ?' +
+					" AND artwork.deleted = b'0'" +
+					" AND exhibition.deleted = b'0'" +
+					' ORDER BY exhibition.create_date'
+
+				// for other target
+				: '')
 
 		// Execute query and send the result
 		try {
 			const result = await pool.queryParamArr(query, values)
+
 			if (result[0].length === 0) {
 				res.status(404).send(result)
 			} 
@@ -98,11 +124,12 @@ function sendArtworkPostRespond () {
 		const material = req.body.material
 		const information = req.body.information
 		const color = req.body.color
+		const is_video = req.body.is_video
 
 		let page_id = ''
 		const create_date = new Date()
 		const artwork_values = [page_id, artist_id, name, create_date, create_date,
-			year, dimension, three_dimensional, material, information, color]
+			year, dimension, three_dimensional, material, information, color, is_video]
 
 		// Generate query string by concatenation
 		const artwork_query = 
@@ -110,8 +137,8 @@ function sendArtworkPostRespond () {
 			// Insert artwork information
 			'INSERT INTO artwork' +
 				' (page_id, artist_id, name, create_date, update_date,' +
-				' year, dimension, three_dimensional, material, information, color)' +
-				' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+				' year, dimension, three_dimensional, material, information, color, is_video)' +
+				' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 
 		const page_query = 
 
@@ -161,7 +188,6 @@ function sendArtworkPostRespond () {
 	}
 }
 
-
 // Send respond for update artwork's information
 // - target : name, information, material, year, dimension
 // return function that send update result with status
@@ -209,17 +235,24 @@ function sendArtworkDeleteRespond () {
 	return async function (req, res, next) {
 
 		// artwork's ID
-		const target_id = req.body.target_id
+		const target_id = req.query.target_id
+		const registered = JSON.parse(req.query.registered)
 		const values = [target_id]
 
 		// Generate query string by concatenation
-		const query = 
-			'DELETE FROM artwork' +
+		const query = (registered)
+			
+			? 'UPDATE artwork' +
+				" SET deleted = b'1'" +
+				' WHERE page_id = ?'
+
+			: 'DELETE FROM artwork' +
 				' WHERE page_id = ?'
 
 		// Execute query and send the result
 		try {
 			const result = await pool.queryTransactionArr(query, values)
+			
 			if (result[0].affectedRows === 0) {
 				res.status(500).send(false)
 			}
@@ -237,10 +270,12 @@ function sendArtworkDeleteRespond () {
 }
 
 // Set router for artwork's metadata
-router.get('/', sendArtworkMetadataRespond())
+router.get('/', sendArtworkMetadataRespond(false))
+router.get('/page', sendArtworkMetadataRespond(true))
 
 // Set router for comment query
 router.get('/comment', sendArtworkQueryRespond('comment'))
+router.get('/exhibition', sendArtworkQueryRespond('exhibition'))
 
 // Set router for posting new artwork
 router.post('/', sendArtworkPostRespond())
@@ -254,5 +289,8 @@ router.put('/information', sendArtworkUpdateRespond('information'))
 router.put('/material', sendArtworkUpdateRespond('material'))
 router.put('/year', sendArtworkUpdateRespond('year'))
 router.put('/dimension', sendArtworkUpdateRespond('dimension'))
+router.put('/three_dimensional', sendArtworkUpdateRespond('three_dimensional'))
+router.put('/is_video', sendArtworkUpdateRespond('is_video'))
+router.put('/color', sendArtworkUpdateRespond('color'))
 
 module.exports = router
