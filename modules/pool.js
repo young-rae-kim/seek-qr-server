@@ -113,7 +113,12 @@ module.exports = {
 					await connection.beginTransaction();
 
 					// Execute all transaction functions in parallel
-					const result = await Promise.all(args.map(async (it) => await connection.query(it)));
+					const result = await Promise.all(
+						args.map(
+							async (it) => await connection.query(it)
+						)
+					);
+					
 					await connection.commit();
 					connection.release();
 					resolve(result);
@@ -122,7 +127,7 @@ module.exports = {
 					connection.release();
 					reject(e);
 				}
-			} catch (e) {
+			} catch (e) { 
 				reject(e);
 			}
 		});
@@ -135,14 +140,15 @@ module.exports = {
 				const pool = await poolPromise;
 				const connection = await pool.getConnection();
 				try {
-					let result = "";
+					const result = [];
 					await connection.beginTransaction();
 
 					// Execute all transaction functions in order
 					for await (const it of args) {
-						result = await connection.query(it);
+						const trans_result = await connection.query(it);
+						result.push(trans_result)
 					}
-					// await Promise.all(args.map(async (it) => await connection.query(it)));
+					
 					await connection.commit();
 					connection.release();
 					resolve(result);
